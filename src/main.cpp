@@ -3,10 +3,36 @@
 #include "imgui_impl_sdlrenderer.h"
 #include <SDL.h>
 #include <cstdio>
+#include <httplib.h>
+#include <json/json.h>
 
 static constexpr auto window_name = "hello";
 static constexpr auto window_width = 1280;
 static constexpr auto window_height = 720;
+
+static std::string encode_url(std::string &url)
+{
+    std::ostringstream escaped;
+    escaped.fill('0');
+    escaped << std::hex;
+
+    for (std::string::const_iterator i = url.begin(), n = url.end(); i != n; ++i)
+    {
+        std::string::value_type c = (*i);
+
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+        {
+            escaped << c;
+            continue;
+        }
+
+        escaped << std::uppercase;
+        escaped << '%' << std::setw(2) << int((unsigned char)c);
+        escaped << std::nouppercase;
+    }
+
+    return escaped.str();
+}
 
 static void render_loop(ImGuiIO &io, SDL_Renderer *renderer, SDL_Window *window)
 {
@@ -54,6 +80,24 @@ int main(int, char **)
     {
         std::printf("Error: %s\n", SDL_GetError());
         return -1;
+    }
+
+    httplib::Client cli("https://noembed.com");
+
+    std::string video_path = "http://www.youtube.com/watch?v=Qr0-7Ds79zo";
+    std::string url = encode_url(video_path);
+    auto resp = cli.Get("/embed?url=" + url);
+
+    if (resp)
+    {
+        auto body = resp->body;
+
+        Json::Value val;
+        Json::Reader reader;
+
+        reader.parse(body, val);
+
+        std::printf("%s\n", val["author_name"].asCString());
     }
 
     SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
