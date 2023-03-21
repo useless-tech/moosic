@@ -2,3 +2,4 @@ imgui.ini
 subprojects/*
 !subprojects/*.wrap
 .cache
+*.jpg

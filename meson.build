@@ -2,6 +2,7 @@ project('moosic', 'cpp', default_options: ['cpp_std=c++17', 'warning_level=3', '
 
 deps = []
 deps += dependency('sdl2')
+deps += dependency('sdl2_image')
 deps += dependency('imgui')
 deps += dependency('cpp-httplib')
 deps += dependency('jsoncpp')

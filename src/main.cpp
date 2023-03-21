@@ -1,7 +1,9 @@
+#include "backends/youtube.hpp"
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer.h"
 #include <SDL.h>
+#include <SDL_image.h>
 #include <cstdio>
 #include <httplib.h>
 #include <json/json.h>
@@ -10,68 +12,16 @@ static constexpr auto window_name = "hello";
 static constexpr auto window_width = 1280;
 static constexpr auto window_height = 720;
 
-static std::string encode_url(std::string &url)
+static SDL_Texture *load_texture_from_image(SDL_Renderer *renderer, const char *file)
 {
-    std::ostringstream escaped;
-    escaped.fill('0');
-    escaped << std::hex;
-
-    for (std::string::const_iterator i = url.begin(), n = url.end(); i != n; ++i)
+    SDL_Texture *texture = NULL;
+    SDL_Surface *surface = IMG_Load(file);
+    if (surface)
     {
-        std::string::value_type c = (*i);
-
-        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
-        {
-            escaped << c;
-            continue;
-        }
-
-        escaped << std::uppercase;
-        escaped << '%' << std::setw(2) << int((unsigned char)c);
-        escaped << std::nouppercase;
+        texture = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
     }
-
-    return escaped.str();
-}
-
-static void render_loop(ImGuiIO &io, SDL_Renderer *renderer, SDL_Window *window)
-{
-
-    bool show_demo_window = true, done = false;
-    ImVec4 clear_color = {0.45f, 0.55f, 0.60f, 1.00f};
-
-    while (!done)
-    {
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event))
-        {
-            ImGui_ImplSDL2_ProcessEvent(&event);
-
-            if (event.type == SDL_QUIT ||
-                (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)))
-                done = true;
-        }
-
-        ImGui_ImplSDLRenderer_NewFrame();
-        ImGui_ImplSDL2_NewFrame();
-        ImGui::NewFrame();
-
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
-
-        // Rendering
-        ImGui::Render();
-
-        SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x,
-                           io.DisplayFramebufferScale.y);
-
-        SDL_SetRenderDrawColor(renderer, clear_color.x * 255, clear_color.y * 255, clear_color.z * 255, clear_color.w * 255);
-
-        SDL_RenderClear(renderer);
-        ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
-        SDL_RenderPresent(renderer);
-    }
+    return texture;
 }
 
 int main(int, char **)
@@ -82,23 +32,11 @@ int main(int, char **)
         return -1;
     }
 
-    httplib::Client cli("https://noembed.com");
+    moosic::YoutubeBackend youtube_backend("Qr0-7Ds79zo");
 
-    std::string video_path = "http://www.youtube.com/watch?v=Qr0-7Ds79zo";
-    std::string url = encode_url(video_path);
-    auto resp = cli.Get("/embed?url=" + url);
-
-    if (resp)
-    {
-        auto body = resp->body;
-
-        Json::Value val;
-        Json::Reader reader;
-
-        reader.parse(body, val);
-
-        std::printf("%s\n", val["author_name"].asCString());
-    }
+    auto song_name = youtube_backend.get_title();
+    auto artist = youtube_backend.get_artist();
+    auto cover = youtube_backend.get_album_cover();
 
     SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 
@@ -124,7 +62,47 @@ int main(int, char **)
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer_Init(renderer);
 
-    render_loop(io, renderer, window);
+    auto texture = load_texture_from_image(renderer, cover.c_str());
+
+    bool done = false;
+    ImVec4 clear_color = {0.45f, 0.55f, 0.60f, 1.00f};
+
+    while (!done)
+    {
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event))
+        {
+            ImGui_ImplSDL2_ProcessEvent(&event);
+
+            if (event.type == SDL_QUIT ||
+                (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)))
+                done = true;
+        }
+
+        ImGui_ImplSDLRenderer_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+
+        {
+            ImGui::Begin(song_name.c_str());
+
+            ImGui::Image((ImTextureID)texture, ImVec2(480, 360));
+
+            ImGui::End();
+        }
+
+        ImGui::Render();
+
+        SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x,
+                           io.DisplayFramebufferScale.y);
+
+        SDL_SetRenderDrawColor(renderer, clear_color.x * 255, clear_color.y * 255, clear_color.z * 255, clear_color.w * 255);
+
+        SDL_RenderClear(renderer);
+        ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
+        SDL_RenderPresent(renderer);
+    }
 
     ImGui_ImplSDLRenderer_Shutdown();
     ImGui_ImplSDL2_Shutdown();
