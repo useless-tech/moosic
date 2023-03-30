@@ -1,64 +1,58 @@
 #pragma once
-#include "miniaudio.h"
 #include "MusicQueue.hpp"
+#include "miniaudio.h"
 namespace moosic
 {
 
-	enum class MusicState : int
-	{
-		PLAYING,
-		PAUSED,
-		DONE
-	};
+enum class MusicState : int
+{
+    PLAYING,
+    PAUSED,
+    DONE
+};
 
+class MusicEngine
+{
+public:
+    MusicEngine(moosic::MusicQueue &q);
 
+    void insert(moosic::MusicQueue &queue);
 
-	class MusicEngine
-	{
-		public: 
-			MusicEngine(moosic::MusicQueue& q);
+    void play(void);
 
-			void insert(moosic::MusicQueue& queue);
+    void pause(void);
 
+    void restart(void);
 
+    void prev_song(void);
 
+    void start_at(int id);
 
-			void play(void);
+    void next_song(void);
 
-			void pause(void);
+    float get_song_duration(void);
 
-			void restart(void);
+    float get_song_time(void);
 
-			void prev_song(void);
+    void set_song_time(float time);
 
-			void start_at(uint32_t id);
+    void set_song_volume(float volume);
 
-			void next_song(void);
+    float get_song_volume(void);
 
-			float get_song_duration(void);
+    int get_index(void) { return index; }
 
-			float get_song_time(void);
+    moosic::MusicState get_state();
 
-			void set_song_time(float time);
+    std::string get_current_song_name(void);
 
-			void set_song_volume(float volume);
+    std::string get_current_song_path(void);
 
-			float get_song_volume(void);
+private:
+    moosic::MusicQueue &queue;
 
- 			uint32_t get_index(void) { return index; }
+    int index;
 
-			moosic::MusicState get_state();
-
-			std::string get_current_song_name(void);
-
-			std::string get_current_song_path(void);
-		private:
-
-			moosic::MusicQueue& queue;
-
-			uint32_t index;
-
-			ma_engine engine;
-
-	};
-}
+    ma_engine engine;
+};
+} // namespace moosic

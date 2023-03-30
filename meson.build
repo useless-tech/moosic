@@ -1,4 +1,4 @@
-project('moosic', 'cpp', default_options: ['cpp_std=c++17', 'warning_level=3', 'werror=false' ])
+project('moosic', 'cpp', default_options: ['cpp_std=c++20', 'warning_level=3', 'werror=false' ])
 
 deps = []
 deps += dependency('openssl')

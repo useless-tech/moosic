@@ -1,7 +1,5 @@
 #include <backends/youtube.hpp>
 #include <fstream>
-
-#define CPPHTTPLIB_OPENSSL_SUPPORT
 #include <httplib.h>
 
 using namespace moosic;
@@ -10,7 +8,7 @@ YoutubeBackend::YoutubeBackend(std::string video_id) : video_id(video_id)
 {
 
     httplib::Client cli("https://noembed.com");
-     
+
     cli.set_ca_cert_path("./ca-bundle.crt");
     cli.enable_server_certificate_verification(false);
 
@@ -21,8 +19,8 @@ YoutubeBackend::YoutubeBackend(std::string video_id) : video_id(video_id)
     if (resp)
     {
         reader.parse(resp->body, json_root);
-
-    } else 
+    }
+    else
     {
         // TODO: Logging!
         std::cerr << "unable to fetch \"" << video_id << "\" json data. (resp returned 0)" << std::endl;
@@ -53,11 +51,21 @@ std::string YoutubeBackend::get_album_cover()
     if (resp)
     {
         new_file.write(resp->body.c_str(), resp->body.length());
-    } else
+    }
+    else
     {
         // TODO: Logging!
         std::cerr << "unable to fetch \"" << video_id << "\" image data. (resp returned 0)" << std::endl;
     }
 
     return path;
+}
+
+std::fstream YoutubeBackend::get_file()
+{
+    std::fstream ret;
+
+    system(("yt-dlp --audio-format mp3 -x https://www.youtube.com/watch?v=" + video_id).c_str());
+
+    return ret;
 }
