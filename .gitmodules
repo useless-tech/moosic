@@ -1,0 +1,3 @@
+[submodule "src/engines/miniaudio"]
+	path = src/engines/miniaudio
+	url = https://github.com/mackron/miniaudio
